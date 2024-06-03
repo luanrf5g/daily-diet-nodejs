@@ -4,15 +4,23 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "dependencies": {
-    "fastify": "^4.27.0"
+    "dev": "npx tsx watch src/server.ts",
+    "knex": "node --import tsx ./node_modules/knex/bin/cli.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "dependencies": {
+    "@fastify/cookie": "^9.3.1",
+    "fastify": "^4.27.0",
+    "knex": "^3.1.0",
+    "zod": "^3.23.8"
+  },
   "devDependencies": {
+    "@rocketseat/eslint-config": "^2.2.2",
+    "@types/node": "^20.13.0",
+    "eslint": "^8.57.0",
+    "sqlite3": "^5.1.7",
     "tsx": "^4.11.0",
     "typescript": "^5.4.5"
   }
