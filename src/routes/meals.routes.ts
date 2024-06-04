@@ -1,29 +1,54 @@
+import { randomUUID } from 'node:crypto'
 import { FastifyInstance } from 'fastify'
+import { z } from 'zod'
+
+import { knex } from '../database'
+import { checkUserSessionIdExists } from '../middlewares/check-user-session-id-exists'
 
 export async function mealsRoutes(app: FastifyInstance) {
-  app.post('/', (req, res) => {
-    const headers = req.headers
-    const body = req.body
+  app.get(
+    '/',
+    {
+      preHandler: [checkUserSessionIdExists],
+    },
+    async (req, res) => {
+      const sessionId = req.cookies.sessionId
 
-    console.log({
-      headers,
-      body,
-    })
+      const user = await knex('users').where('session_id', sessionId).first()
 
-    res.send()
-  })
+      const meals = await knex('meals').where('user_id', user?.id).select('*')
 
-  app.get('/', (req, res) => {
-    const id = '213r4dsa'
+      return { meals }
+    },
+  )
 
-    const { userid } = req.headers
+  app.post(
+    '/',
+    {
+      preHandler: [checkUserSessionIdExists],
+    },
+    async (req, res) => {
+      const mealsSchema = z.object({
+        title: z.string(),
+        description: z.string(),
+        diet: z.boolean(),
+      })
 
-    if (id === userid) {
-      console.log('OK!')
-    } else {
-      console.log('FAILED!')
-    }
+      const { title, description, diet } = mealsSchema.parse(req.body)
 
-    res.send()
-  })
+      const user = await knex('users')
+        .where('session_id', req.cookies.sessionId)
+        .first()
+
+      await knex('meals').insert({
+        id: randomUUID(),
+        title,
+        description,
+        in_diet: diet,
+        user_id: user?.id,
+      })
+
+      res.status(201).send()
+    },
+  )
 }
