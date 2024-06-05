@@ -22,19 +22,42 @@ export async function mealsRoutes(app: FastifyInstance) {
     },
   )
 
+  app.get(
+    '/diet/:id',
+    { preHandler: [checkUserSessionIdExists] },
+    async (req, res) => {
+      const getDietParamsSchema = z.object({
+        id: z.string(),
+      })
+
+      const { id } = getDietParamsSchema.parse(req.params)
+
+      const user = await knex('users')
+        .where('session_id', req.cookies.sessionId)
+        .first()
+
+      const diet = await knex('meals')
+        .where('id', id)
+        .andWhere('user_id', user?.id)
+        .first()
+
+      res.status(200).send({ diet })
+    },
+  )
+
   app.post(
     '/',
     {
       preHandler: [checkUserSessionIdExists],
     },
     async (req, res) => {
-      const mealsSchema = z.object({
+      const createMealsBodySchema = z.object({
         title: z.string(),
         description: z.string(),
         diet: z.boolean(),
       })
 
-      const { title, description, diet } = mealsSchema.parse(req.body)
+      const { title, description, diet } = createMealsBodySchema.parse(req.body)
 
       const user = await knex('users')
         .where('session_id', req.cookies.sessionId)
@@ -49,6 +72,53 @@ export async function mealsRoutes(app: FastifyInstance) {
       })
 
       res.status(201).send()
+    },
+  )
+
+  app.put(
+    '/:id',
+    { preHandler: [checkUserSessionIdExists] },
+    async (req, res) => {
+      const updateMealParamsSchema = z.object({
+        id: z.string().uuid(),
+      })
+
+      const { id } = updateMealParamsSchema.parse(req.params)
+
+      const updateMealBodySchema = z.object({
+        title: z.string(),
+        description: z.string(),
+        updatedAt: z.string(),
+        inDiet: z.boolean(),
+      })
+
+      const { title, description, updatedAt, inDiet } =
+        updateMealBodySchema.parse(req.body)
+
+      await knex('meals').where('id', id).update({
+        title,
+        description,
+        updated_at: updatedAt,
+        in_diet: inDiet,
+      })
+
+      res.status(204).send()
+    },
+  )
+
+  app.delete(
+    '/:id',
+    { preHandler: [checkUserSessionIdExists] },
+    async (req, res) => {
+      const deleteMealParamsSchema = z.object({
+        id: z.string().uuid(),
+      })
+
+      const { id } = deleteMealParamsSchema.parse(req.params)
+
+      await knex('meals').where('id', id).del()
+
+      res.status(204).send()
     },
   )
 }
