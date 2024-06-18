@@ -45,6 +45,34 @@ export async function mealsRoutes(app: FastifyInstance) {
     },
   )
 
+  app.get(
+    '/diet',
+    {
+      preHandler: [checkUserSessionIdExists],
+    },
+    async (req, res) => {
+      const user = await knex('users')
+        .where('session_id', req.cookies.sessionId)
+        .first()
+
+      const meals = await knex('meals').where('user_id', user?.id).select('*')
+
+      const inDietMeals = await knex('meals')
+        .where('user_id', user?.id)
+        .andWhere('in_diet', 1)
+        .select('*')
+
+      const percInDiet = (inDietMeals.length / meals.length) * 100
+
+      res.status(200).send({
+        meals: `Refeições: ${meals.length}`,
+        inDiet: `Refeições: ${inDietMeals.length}`,
+        outDiet: `Refeições: ${meals.length - inDietMeals.length}`,
+        Percent: `Percentual: ${percInDiet.toFixed(2)}% dentro da Dieta.`,
+      })
+    },
+  )
+
   app.post(
     '/',
     {
